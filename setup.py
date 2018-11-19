@@ -15,8 +15,19 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/gfederix/bio-ranges",
+    license="LGPL3+",
+    install_requires=['numpy',
+                      'pandas',],
+    extras_require={
+        'tests':['pytest',]
+    },
     packages=setuptools.find_packages(),
     classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
         "Programming Language :: Python :: 3",
         "OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
         "Operating System :: OS Independent",
