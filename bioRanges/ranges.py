@@ -8,11 +8,22 @@ https://doi.org/10.1093/bioinformatics/btl647
 
 see also Bioconductor IRanges pdf too
 
-Propoused numpy structure for ranged data
->> np.array([(1,2, (3,4)),], dtype=[ ("start", 'u4'), ("length", 'u4'), ("data", [('name', 'f4'), ("score", 'b')] )  ] )
+Propoused numpy structure for ranged data without pandas:
 
-np.array([(1+x,2+x, (3,4)) for x in range(10)], dtype=[ ("start", 'u4'), ("length", 'u4'), ("data", [('name', 'f4'), ("score", 'b')] )  ] )
+>>> np.array([(1,2, (3,4)),], dtype=[ ("start", 'u4'), ("length", 'u4'), ("data", [('name', 'f4'), ("score", 'b')] )  ] )
+array([(1, 2, (3., 4))],
+      dtype=[('start', '<u4'), ('length', '<u4'), ('data', [('name', '<f4'), ('score', 'i1')])])
 
+>>> np.array([(1+x,2+x, (3,4)) for x in range(10)], dtype=[ ("start", 'u4'), ("length", 'u4'), ("data", [('name', 'f4'), ("score", 'b')] )  ] )
+array([( 1,  2, (3., 4)), ( 2,  3, (3., 4)), ( 3,  4, (3., 4)),
+       ( 4,  5, (3., 4)), ( 5,  6, (3., 4)), ( 6,  7, (3., 4)),
+       ( 7,  8, (3., 4)), ( 8,  9, (3., 4)), ( 9, 10, (3., 4)),
+       (10, 11, (3., 4))],
+      dtype=[('start', '<u4'), ('length', '<u4'), ('data', [('name', '<f4'), ('score', 'i1')])])
+
+Ranges with pandas:
+r._pos == NCList with sequence start and width
+r._data == pandas DataFrame
 
 ----------------
 
@@ -20,12 +31,13 @@ lGPL3+ or leter
 (c) Fyodor P. Goncharov gfederix@gmail.com
 """
 import numpy as np
+import pandas as pd
 from itertools import repeat
 
 class Ranges():
     PRI_TYPES = [('start', 'u4'), ('width', 'u4')]
     DATA_TYPES = []
-
+    INDEX_COLS = ['names']
     @property
     def DTYPE(self):
         # if not len(self.DATA_TYPES):
@@ -37,25 +49,31 @@ class Ranges():
 
     def __init__(self, start, end=None, width=None,
                  names=None, score=None, dtype=None):
+        self._data = pd.DataFrame()
         # default data
         if score is not None:
-            self.DATA_TYPES += [('score', 'f4')]
+            self._data['score'] = score
         if names is not None:
-            self.DATA_TYPES += [('score', 'f4')]
+            self._data['name'] = names
+            self._update_index_cols()
 
         # Create array
-        self.data = np.zeros(len(start), dtype=self.DTYPE)
-        self.data['start'] = start
+        self._pos = np.zeros(len(start), dtype=self.DTYPE)
+        self._pos['start'] = start
         if width is not None and end is not None:
             raise Exception("End and width cannot be defined bouth in Range class.")
         if width is not None:
-            self.data['width'] = width
+            self._pos['width'] = width
         elif end is not None:
-            self.data['width'] = end - self.data['start'] + 1
+            self._pos['width'] = end - self._pos['start'] + 1
 
-            
+    def _update_index_cols(self):
+        ix = list(set(self.INDEX_COLS) &
+                  (set(self.colnames()) + set(self._data.index.names)))
+        self._data = self._data.set_index(ix)
+
     def width(self):
-        return(len(self.data))
+        return(len(self._pos))
 
     # TODO1:
     def resize(self, width, fix):
@@ -90,9 +108,9 @@ class Ranges():
         if no key and default not set, function rice exception
         """
         if key in self.PRI_TYPES:
-            return(self.data[key])
-        elif key in self.DATA_TYPES:
-            return(self.data['data'][key])
+            return(self._pos[key])
+        elif key in self.colnames():
+            return(self._data[key])
         elif default is not None:
             return(default)
         raise Exception("Wrong index key")
@@ -102,58 +120,72 @@ class Ranges():
 
     # Ranges Representation:
     def show(self, data_delim="|"):
-        print("IRange", "with", self.width(), "ranges:")
+        def pr(*args, **kwargs):
+            args = ''.join(map(lambda x: '{:>10}'.format(x), args))
+            print(args, sep="", **kwargs) 
+        
+        print("Range", "with", self.width(), "ranges:")
         # Print Table header:
-        for name, type in self.PRI_TYPES:
-            print(name, end="\t")
-        if len(self.DATA_TYPES):
-            print(data_delim, end="\t")
-            for name, type in self.DATA_TYPES:
-                print(name, end="\t")
-            print()
+        pr("start", "width", end="")
+        # if self.nrows():
+        #     print(data_delim, end="\t")
+        #     for name, type in self.DATA_TYPES:
+        #         print(name, end="\t")
+        print()
+        # Data Type printing:
+        pr(
+            *map(lambda kw: '<{}>'.format(self._pos[kw].dtype), ['start', 'width']))
+        # pr('<' + str(self._pos['start'].dtype) + '>',
+        #    '<' + str(self._pos['width'].dtype) + '>')
 
+        
         # Print Tabel body:
         def pri_row_printer(start, width):
-            print(start, start + width - 1, sep="\t", end="\t")
+            pr(start, width, end="")
 
         def data_row_printer(data_row):
-            print(data_delim, end="\t")
-            for cell in data_row:
-                print(cell, end="\t")
+            if len(data_row):
+                print(end="\t")
+                print(data_delim, end="\t")
+                for cell in data_row:
+                    pr(cell, end="\t")
             print()
 
-        for i, (start, width, data_row) in enumerate(self.data):
+        for i, (start, width, data_row) in enumerate(self._pos):
             pri_row_printer(start, width)
             data_row_printer(data_row)
-            if i > self.MAX_ROW_SHOW // 2 and self.nrow() > self.MAX_ROW_SHOW:
-                for start, width, data_row in self.data[- self.MAX_ROW_SHOW // 2:]:
+            if i > self.MAX_ROW_SHOW // 2 and self.nrows() > self.MAX_ROW_SHOW:
+                for start, width, data_row in self._pos[- self.MAX_ROW_SHOW // 2:]:
                     pri_row_printer(start, width)
                 data_row_printer(data_row)
                 break
 
-    # R like table size function:
+    # R like data.frame function:
     def nrows(self):
-        return self.data.shape[0]
+        return self._pos.shape[0]
 
     def ncols(self):
-        return len(self.DATA_TYPES)
+        return len(self._data.columns)
 
+    def colnames(self):
+        return list(self._data)
+
+    # Pandas methods:
+    def types(self):
+        return self._data.types
+                  
     # Ranges class Data model
     def __repr__(self):
-        data_cols = 0
-        try:
-            data_cols = self.data["data"].shape[1]
-        except AttributeError:
-            pass
-        print("<IRange", "width:", self.width(), "with", data_cols,
+        print("<IRange", "width:", self.width(),
+              "with", self.ncols(), self.colnames(),
               "data cols", ">")
-        repr(self.data)
+        repr(self._pos)
 
     def __str__(self):
         self.show()
 
     def __len__(self):
-        return(self.width())
+        return self.width()
 
     # Ranges I/O:
     @classmethod
