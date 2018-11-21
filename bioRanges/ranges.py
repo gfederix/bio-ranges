@@ -33,7 +33,7 @@ lGPL3+ or leter
 import numpy as np
 import pandas as pd
 from itertools import repeat
-
+from collections import namedtuple
 class Ranges():
     PRI_TYPES = [('start', 'u4'), ('width', 'u4')]
     DATA_TYPES = []
@@ -48,17 +48,15 @@ class Ranges():
     MAX_ROW_SHOW = 10
 
     def __init__(self, start, end=None, width=None,
-                 names=None, score=None, dtype=None):
-        self._data = pd.DataFrame()
+                 names=None, data=None, dtype=None):
+        self._data = pd.DataFrame(data=data)
         # default data
-        if score is not None:
-            self._data['score'] = score
         if names is not None:
             self._data['name'] = names
             self._update_index_cols()
 
         # Create array
-        self._pos = np.zeros(len(start), dtype=self.DTYPE)
+        self._pos = np.zeros(len(start), dtype=self.PRI_TYPES)
         self._pos['start'] = start
         if width is not None and end is not None:
             raise Exception("End and width cannot be defined bouth in Range class.")
@@ -119,47 +117,49 @@ class Ranges():
         pass
 
     # Ranges Representation:
-    def show(self, data_delim="|"):
-        def pr(*args, **kwargs):
-            args = ''.join(map(lambda x: '{:>10}'.format(x), args))
-            print(args, sep="", **kwargs) 
-        
+    def show(self, data_delim=" |"):
+        def pr(*args):
+            f = '{:>10,.5}'
+            args = ''.join(map(lambda x: f.format(x), args))
+            print(args, sep="", end="") 
         print("Range", "with", self.width(), "ranges:")
         # Print Table header:
-        pr("start", "width", end="")
-        # if self.nrows():
-        #     print(data_delim, end="\t")
-        #     for name, type in self.DATA_TYPES:
-        #         print(name, end="\t")
+        pr("start", "width")
+        if self.ncols():
+            print(data_delim, end="")
+            for name in self.colnames():
+                pr(name)
         print()
         # Data Type printing:
         pr(
             *map(lambda kw: '<{}>'.format(self._pos[kw].dtype), ['start', 'width']))
-        # pr('<' + str(self._pos['start'].dtype) + '>',
-        #    '<' + str(self._pos['width'].dtype) + '>')
-
-        
+        if self.ncols():
+            print(data_delim, end="")
+            for dtype in self._data.dtypes:
+                pr('<{}>'.format(dtype))
+        print()
         # Print Tabel body:
         def pri_row_printer(start, width):
-            pr(start, width, end="")
+            pr(start, width)
 
         def data_row_printer(data_row):
+            print(data_row, len(data_row))
             if len(data_row):
-                print(end="\t")
-                print(data_delim, end="\t")
+                print(data_delim)
                 for cell in data_row:
-                    pr(cell, end="\t")
+                    pr(cell)
             print()
 
-        for i, (start, width, data_row) in enumerate(self._pos):
+        for i, (start, width, data) in enumerate(self.itertuples()):
             pri_row_printer(start, width)
-            data_row_printer(data_row)
+            data_row_printer(data)
             if i > self.MAX_ROW_SHOW // 2 and self.nrows() > self.MAX_ROW_SHOW:
                 for start, width, data_row in self._pos[- self.MAX_ROW_SHOW // 2:]:
                     pri_row_printer(start, width)
                 data_row_printer(data_row)
                 break
-
+    def itertuples(self):
+        return IterTuples(self)
     # R like data.frame function:
     def nrows(self):
         return self._pos.shape[0]
@@ -207,3 +207,20 @@ class Ranges():
 
     def to_delim(path):
         pass
+class IterTuples:
+    def __init__(self, ranges):
+        self.ranges = ranges
+        self.ipos  = iter(ranges._pos)
+        self.idt   = iter(ranges._data.itertuples())
+        self.Row = namedtuple("Row", ["start", "width", "data"])
+    def __iter__(self):
+        return self
+    def __next__(self):
+        args = [x for x in next(self.ipos)]
+        dt = next(self.idt)
+        args+= [dt]
+        return(self.Row(*args))
+
+
+
+
