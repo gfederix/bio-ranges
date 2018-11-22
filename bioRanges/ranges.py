@@ -153,9 +153,9 @@ class Ranges():
             # print(data_row, len(data_row))
             if len(data_row):
                 print(data_delim, end="")
-                for cell in data_row[1:]:
+                for cell in data_row:
                     pr(cell)
-        for i, (start, width, data) in enumerate(self.itertuples()):
+        for i, (start, width, *data) in enumerate(self.itertuples()):
             log(start, "!!", width)
             pri_row_printer(start, width)
             data_row_printer(data)
@@ -219,19 +219,19 @@ class IterTuples:
         self.ranges = ranges
         self.ipos  = iter(ranges._pos)
         if len(ranges._data):
-            self.idt   = iter(ranges._data.itertuples())
+            self.idt   = iter(ranges._data.itertuples(False))
         else:
             self.idt = None
-        self.Row = namedtuple("Row", ["start", "width", "data"])
+        self.Row = namedtuple("Row", ["start", "width"] + list(ranges._data))
     def __iter__(self):
         return self
     def __next__(self):
         args = [x for x in next(self.ipos)]
         if self.idt is not None:
-            dt = next(self.idt)
+            dt = list(next(self.idt))
         else:
             dt = tuple()
-        args+= [dt]
+        args+= dt
         return(self.Row(*args))
 
 
