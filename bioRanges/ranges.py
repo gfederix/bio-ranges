@@ -30,10 +30,13 @@ r._data == pandas DataFrame
 lGPL3+ or leter
 (c) Fyodor P. Goncharov gfederix@gmail.com
 """
+import sys
 import numpy as np
 import pandas as pd
 from itertools import repeat
 from collections import namedtuple
+def log(*args):
+    print(*args, file=sys.stderr)
 class Ranges():
     PRI_TYPES = [('start', 'u4'), ('width', 'u4')]
     DATA_TYPES = []
@@ -119,9 +122,13 @@ class Ranges():
     # Ranges Representation:
     def show(self, data_delim=" |"):
         def pr(*args):
-            f = '{:>10,.5}'
-            args = ''.join(map(lambda x: f.format(x), args))
-            print(args, sep="", end="") 
+            out = ''
+            for arg in args:
+                if isinstance(arg, np.float):
+                    out +="{:>10.4}".format(arg)
+                else:
+                    out +="{:>10}".format(arg)
+            print(out, sep="", end="") 
         print("Range", "with", self.width(), "ranges:")
         # Print Table header:
         pr("start", "width")
@@ -143,16 +150,16 @@ class Ranges():
             pr(start, width)
 
         def data_row_printer(data_row):
-            print(data_row, len(data_row))
+            # print(data_row, len(data_row))
             if len(data_row):
-                print(data_delim)
-                for cell in data_row:
+                print(data_delim, end="")
+                for cell in data_row[1:]:
                     pr(cell)
-            print()
-
         for i, (start, width, data) in enumerate(self.itertuples()):
+            log(start, "!!", width)
             pri_row_printer(start, width)
             data_row_printer(data)
+            print()
             if i > self.MAX_ROW_SHOW // 2 and self.nrows() > self.MAX_ROW_SHOW:
                 for start, width, data_row in self._pos[- self.MAX_ROW_SHOW // 2:]:
                     pri_row_printer(start, width)
@@ -211,13 +218,19 @@ class IterTuples:
     def __init__(self, ranges):
         self.ranges = ranges
         self.ipos  = iter(ranges._pos)
-        self.idt   = iter(ranges._data.itertuples())
+        if len(ranges._data):
+            self.idt   = iter(ranges._data.itertuples())
+        else:
+            self.idt = None
         self.Row = namedtuple("Row", ["start", "width", "data"])
     def __iter__(self):
         return self
     def __next__(self):
         args = [x for x in next(self.ipos)]
-        dt = next(self.idt)
+        if self.idt is not None:
+            dt = next(self.idt)
+        else:
+            dt = tuple()
         args+= [dt]
         return(self.Row(*args))
 
