@@ -81,6 +81,11 @@ class Ranges():
     def width(self):
         return(len(self._pos))
 
+    # Equality Test
+    def samerange(self, range):
+        return True
+    def same(self, range):
+        return True
     # TODO1:
     def resize(self, width, fix):
         pass
@@ -207,26 +212,30 @@ class Ranges():
     def __len__(self):
         return self.width()
 
-    # Ranges I/O:
-    @classmethod
-    def from_csv(path):
-        pass
-    @classmethod
-    def from_delim(path):
-        pass
+# Ranges I/O:
     @classmethod
     def read(path, format="delim"):
         pass
-        
-    def to_csv(path):
-        if format not in ('csv', ):
-            pass
+
+    @classmethod
+    def read_delim(path):
+        pass
+    
+    @classmethod
+    def read_csv(path):
+        pass
 
     def write(path, format="delim"):
         pass
 
+    def to_csv(path):
+        if format not in ('csv', ):
+            pass
+
     def to_delim(path):
         pass
+
+# Range Iterator classes
 class IterTuples:
     def __init__(self, ranges):
         self.ranges = ranges
@@ -246,7 +255,4 @@ class IterTuples:
             dt = tuple()
         args+= dt
         return(self.Row(*args))
-
-
-
 

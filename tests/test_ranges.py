@@ -1,6 +1,8 @@
 import pytest
+from pathlib import Path
 import numpy as np
 from bioRanges import Ranges
+
 @pytest.fixture
 def test_out(capsys):
     capture = capsys.readouterr()
@@ -80,3 +82,24 @@ def test_long_range_with_data_show(test_out, capsys):
          9         1 |       9.0      0.09
 ''')
 
+def test_delim(tmpdir):
+    path = Path(tmpdir, "delim.tab")
+    print(path)
+    rg1 = Ranges(start=range(13), width=1, data = {
+        'score' : np.array(range(0, 13), dtype="f4"),
+        'fscore' : np.array(range(0, 13), dtype="f4") /100,
+    })
+    rg1.to_delim(path)
+    rg2 = Ranges.read_delim(path)
+    assert rg1.same(rg2)
+    
+@pytest.mark.skip(reason="TODO")
+def test_samerange():
+    rg1 = Ranges(start=range(13), width=1, data = {
+        'score' : np.array(range(0, 13), dtype="f4"),
+        'fscore' : np.array(range(0, 13), dtype="f4") /100,
+    })
+    rg2 = Ranges(start=range(13), width=1)
+    rg3 = Ranges(start=range(13), width=2)
+    assert rg1.samerange(rg2)
+    assert not rg2.samerange(rg3)
