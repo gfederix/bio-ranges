@@ -49,7 +49,6 @@ class Ranges():
         #     return(self.PRI_TYPES + [('data', self.DATA_TYPES)])
         return(self.PRI_TYPES + [('data', self.DATA_TYPES)])
     MAX_ROW_SHOW = 10
-
     def __init__(self, start, end=None, width=None,
                  names=None, data=None, dtype=None):
         self._data = pd.DataFrame(data=data)
@@ -67,7 +66,13 @@ class Ranges():
             self._pos['width'] = width
         elif end is not None:
             self._pos['width'] = end - self._pos['start'] + 1
-
+    @classmethod
+    def from_raw(cls, pos, data_frame):
+        self = cls.__new__(cls)
+        self._data = data_frame
+        self._pos  = pos
+        return self
+        
     def _update_index_cols(self):
         ix = list(set(self.INDEX_COLS) &
                   (set(self.colnames()) + set(self._data.index.names)))
@@ -101,7 +106,9 @@ class Ranges():
     # Emulating container types
     def __getitem__(self, key):
         if isinstance(key, str):
-            self.get_col(key)
+            return self.get_col(key)
+        else:
+            return Ranges.from_raw(self._pos.__getitem__(key), self._data.__getitem__(key))
 
     def get_col(self, key, default=None):
         """
@@ -155,16 +162,22 @@ class Ranges():
                 print(data_delim, end="")
                 for cell in data_row:
                     pr(cell)
-        for i, (start, width, *data) in enumerate(self.itertuples()):
-            log(start, "!!", width)
-            pri_row_printer(start, width)
-            data_row_printer(data)
-            print()
+        for i, (start, width, *data) in enumerate(self.itertuples(), 1):
+            # log(start, "!!", width)
             if i > self.MAX_ROW_SHOW // 2 and self.nrows() > self.MAX_ROW_SHOW:
-                for start, width, data_row in self._pos[- self.MAX_ROW_SHOW // 2:]:
+                print("...")
+                # print(self)
+                # print(self[- self.MAX_ROW_SHOW // 2:])
+                for start, width, *data_row in self[1 - self.MAX_ROW_SHOW // 2:].itertuples():
                     pri_row_printer(start, width)
-                data_row_printer(data_row)
+                    data_row_printer(data_row)
+                    print()
                 break
+            else:
+                pri_row_printer(start, width)
+                data_row_printer(data)
+                print()
+
     def itertuples(self):
         return IterTuples(self)
     # R like data.frame function:
