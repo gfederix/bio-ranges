@@ -34,7 +34,7 @@ import sys
 import numpy as np
 import pandas as pd
 from itertools import repeat
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 def log(*args):
     print(*args, file=sys.stderr)
 class Ranges():
@@ -82,10 +82,14 @@ class Ranges():
         return(len(self._pos))
 
     # Equality Test
-    def samerange(self, range):
-        return True
-    def same(self, range):
-        return True
+    def samerange(self, ran):
+        print(self._pos, ran._pos)
+        print(self._pos.dtype, ran._pos.dtype)
+        return all(self._pos == ran._pos)
+
+    def equals(self, range):
+        return all(self._pos == range._pos) and self._data.equals(range._data)
+
     # TODO1:
     def resize(self, width, fix):
         pass
@@ -214,26 +218,62 @@ class Ranges():
 
 # Ranges I/O:
     @classmethod
-    def read(path, format="delim"):
+    def read(cls, path, format="delim"):
         pass
 
     @classmethod
-    def read_delim(path):
-        pass
+    def read_delim(cls, path, sep='\t', comment_char="#"):
+        with open(path, "r") as fh:
+            start_list, end_list = [], []
+            data_dict = defaultdict(list)
+            comment = ""
+            for line in fh:
+                if line.startswith(comment_char):
+                    comment += line
+                    continue
+                start, end, *data = line.strip().split(sep)
+                if start == 'start' and end == 'end':
+                    data_cols = data
+                    continue
+                start_list += [int(start)]
+                end_list += [int(end)]
+                if data_cols is None:
+                    data_cols = list(range(len(data)))
+                for key, val in zip(data_cols, data):
+                    data_dict[key] = data_dict[key] + [val]
+            print(data_dict)
+            for key in data_dict.keys():
+                first_val = data_dict[key][0]
+                if first_val.startswith("0."):
+                    data_dict[key] = np.array(data_dict[key], dtype='f4')
+                else:
+                    try:
+                        int(first_val)
+                        data_dict[key] = np.array(data_dict[key], dtype='i4')
+                    except ValueError:
+                        pass
+                    
+                
+        return(cls(start=start_list, end=end_list, data=data_dict))
     
     @classmethod
-    def read_csv(path):
+    def read_csv(cls, path):
         pass
 
-    def write(path, format="delim"):
+    def write(self, path, format="delim"):
         pass
 
-    def to_csv(path):
-        if format not in ('csv', ):
-            pass
-
-    def to_delim(path):
+    def to_csv(self, path):
         pass
+
+    def to_delim(self, path, sep="\t"):
+        with open(path, "w") as fh:
+            fh.write(sep.join(['start', 'end'] + self.colnames()) + "\n")
+            for start, width, *data in self.itertuples():
+                end = start + width - 1
+                line = sep.join(map(str, [start, end] + data)) + '\n'
+                fh.write(line)
+
 
 # Range Iterator classes
 class IterTuples:

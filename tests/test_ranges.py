@@ -91,9 +91,9 @@ def test_delim(tmpdir):
     })
     rg1.to_delim(path)
     rg2 = Ranges.read_delim(path)
-    assert rg1.same(rg2)
+    assert rg1.samerange(rg2)
+    assert rg1.equals(rg2)
     
-@pytest.mark.skip(reason="TODO")
 def test_samerange():
     rg1 = Ranges(start=range(13), width=1, data = {
         'score' : np.array(range(0, 13), dtype="f4"),
