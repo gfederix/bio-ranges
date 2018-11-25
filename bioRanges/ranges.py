@@ -30,8 +30,6 @@ r._data == pandas DataFrame
 lGPL3+ or leter
 (c) Fyodor P. Goncharov gfederix@gmail.com
 """
-class NotImplemented(Exception):
-    pass 
 
 import sys
 from itertools import repeat
@@ -65,19 +63,25 @@ class Ranges():
             self._update_index_cols()
 
         # Create array
-        self._pos = np.zeros(len(start), dtype=self.PRI_TYPES)
-        self._pos['start'] = start
+        self.start = np.array(start, dtype="u4")
         if width is not None and end is not None:
             raise Exception("End and width cannot be defined bouth in Range class.")
         if width is not None:
-            self._pos['width'] = width
+            self.end = self.start + width - 1
         elif end is not None:
-            self._pos['width'] = end - self._pos['start'] + 1
+            self.end = np.zeros(len(start), dtype="u4") + end
+            print(">",end)
+            print(">",self.end)
+        print("!!!")
+        print(self.start)
+        print(self.end)
+        print("+++")
     @classmethod
-    def from_raw(cls, pos, data_frame):
+    def from_raw(cls, start, end, data_frame):
         self = cls.__new__(cls)
         self._data = data_frame
-        self._pos  = pos
+        self.start = start
+        self.end = end
         return self
         
     def _update_index_cols(self):
@@ -86,17 +90,16 @@ class Ranges():
         self._data = self._data.set_index(ix)
 
     def width(self):
-        return(len(self._pos))
+        return(len(self.start))
 
     # Equality Test
     def samerange(self, ran):
-        print(self._pos, ran._pos)
-        print(self._pos.dtype, ran._pos.dtype)
-        return all(self._pos == ran._pos)
+        return (np.array_equal(self.start, ran.start) and
+                np.array_equal(self.end, ran.end))
 
-    def equals(self, range):
-        return all(self._pos == range._pos) and self._data.equals(range._data)
-
+    def equals(self, ran):
+        return self.samerange(ran) and self._data.equals(ran._data)
+    
     # TODO1:
     def resize(self, width, fix):
         raise NotImplemented
@@ -124,15 +127,19 @@ class Ranges():
         if isinstance(key, str):
             return self.get_col(key)
         else:
-            return Ranges.from_raw(self._pos.__getitem__(key), self._data.__getitem__(key))
+            return Ranges.from_raw(self.start.__getitem__(key),
+                                   self.end.__getitem__(key),
+                                   self._data.__getitem__(key))
 
     def get_col(self, key, default=None):
         """
         range.get_col(key, default)
         if no key and default not set, function rice exception
         """
-        if key in self.PRI_TYPES:
-            return(self._pos[key])
+        if key == "start":
+            return(self.start)
+        elif key == "end":
+            return(self.end)
         elif key in self.colnames():
             return(self._data[key])
         elif default is not None:
@@ -154,7 +161,7 @@ class Ranges():
             print(out, sep="", end="") 
         print("Range", "with", self.width(), "ranges:")
         # Print Table header:
-        pr("start", "width")
+        pr("start", "end")
         if self.ncols():
             print(data_delim, end="")
             for name in self.colnames():
@@ -162,7 +169,7 @@ class Ranges():
         print()
         # Data Type printing:
         pr(
-            *map(lambda kw: '<{}>'.format(self._pos[kw].dtype), ['start', 'width']))
+            *map(lambda x: '<{}>'.format(x), [self.start.dtype, self.end.dtype]))
         if self.ncols():
             print(data_delim, end="")
             for dtype in self._data.dtypes:
@@ -198,7 +205,7 @@ class Ranges():
         return IterTuples(self)
     # R like data.frame function:
     def nrows(self):
-        return self._pos.shape[0]
+        return self.start.shape[0]
 
     def ncols(self):
         return len(self._data.columns)
@@ -215,7 +222,6 @@ class Ranges():
         print("<IRange", "width:", self.width(),
               "with", self.ncols(), self.colnames(),
               "data cols", ">")
-        repr(self._pos)
 
     def __str__(self):
         self.show()
@@ -248,7 +254,6 @@ class Ranges():
                     data_cols = list(range(len(data)))
                 for key, val in zip(data_cols, data):
                     data_dict[key] = data_dict[key] + [val]
-            print(data_dict)
             for key in data_dict.keys():
                 first_val = data_dict[key][0]
                 if first_val.startswith("0."):
@@ -276,8 +281,7 @@ class Ranges():
     def to_delim(self, path, sep="\t"):
         with open(path, "w") as fh:
             fh.write(sep.join(['start', 'end'] + self.colnames()) + "\n")
-            for start, width, *data in self.itertuples():
-                end = start + width - 1
+            for start, end, *data in self.itertuples():
                 line = sep.join(map(str, [start, end] + data)) + '\n'
                 fh.write(line)
 
@@ -286,20 +290,21 @@ class Ranges():
 class IterTuples:
     def __init__(self, ranges):
         self.ranges = ranges
-        self.ipos  = iter(ranges._pos)
+        self.istart  = iter(ranges.start)
+        self.iend  = iter(ranges.end)
         if len(ranges._data):
             self.idt   = iter(ranges._data.itertuples(False))
         else:
             self.idt = None
-        self.Row = namedtuple("Row", ["start", "width"] + list(ranges._data))
+        self.Row = namedtuple("Row", ["start", "end"] + list(ranges._data))
     def __iter__(self):
         return self
     def __next__(self):
-        args = [x for x in next(self.ipos)]
+        args = [next(self.istart), next(self.iend)]
         if self.idt is not None:
             dt = list(next(self.idt))
         else:
             dt = tuple()
-        args+= dt
+        args += dt
         return(self.Row(*args))
 
