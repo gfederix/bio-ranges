@@ -30,11 +30,18 @@ r._data == pandas DataFrame
 lGPL3+ or leter
 (c) Fyodor P. Goncharov gfederix@gmail.com
 """
+class NotImplemented(Exception):
+    pass 
+
 import sys
-import numpy as np
-import pandas as pd
 from itertools import repeat
 from collections import namedtuple, defaultdict
+
+import numpy as np
+import pandas as pd
+
+from .exeptions import NotImplemented
+
 def log(*args):
     print(*args, file=sys.stderr)
 class Ranges():
@@ -92,25 +99,25 @@ class Ranges():
 
     # TODO1:
     def resize(self, width, fix):
-        pass
+        raise NotImplemented
     def from_arry(array):
-        pass
+        raise NotImplemented
     def sliding_window(self, funct, width, step, pool=None):
-        pass
+        raise NotImplemented
     def overlap(self, x):
-        pass
+        raise NotImplemented
 
     # TODO2:
     def shift():
-        pass
+        raise NotImplemented
 
     # TODO3:
     def feflect():
-        pass
+        raise NotImplemented
     def narrow():
-        pass
+        raise NotImplemented
     def promoters():
-        pass
+        raise NotImplemented
 
     # Emulating container types
     def __getitem__(self, key):
@@ -133,7 +140,7 @@ class Ranges():
         raise Exception("Wrong index key")
 
     def __setitem__(self, key, value):
-        pass
+        raise NotImplemented
 
     # Ranges Representation:
     def show(self, data_delim=" |"):
@@ -219,7 +226,7 @@ class Ranges():
 # Ranges I/O:
     @classmethod
     def read(cls, path, format="delim"):
-        pass
+        raise NotImplemented
 
     @classmethod
     def read_delim(cls, path, sep='\t', comment_char="#"):
@@ -258,13 +265,13 @@ class Ranges():
     
     @classmethod
     def read_csv(cls, path):
-        pass
+        raise NotImplemented
 
     def write(self, path, format="delim"):
-        pass
+        raise NotImplemented
 
     def to_csv(self, path):
-        pass
+        raise NotImplemented
 
     def to_delim(self, path, sep="\t"):
         with open(path, "w") as fh:
