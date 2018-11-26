@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 import setuptools
+from Cython.Build import cythonize
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -17,10 +19,21 @@ setuptools.setup(
     url="https://github.com/gfederix/bio-ranges",
     license="LGPL3+",
     install_requires=['numpy',
-                      'pandas',],
-    extras_require={
-        'tests':['pytest', 'cython',]
-    },
+                      'pandas',
+    ],
+    setup_requires=[
+        'pytest-runner',
+    ],
+    tests_require=[
+        'pytest', 'Cython',
+    ],
+    # extras_require={
+    #     'tests':['pytest', 'cython', 'Cython',]
+    # },
+    ext_modules=cythonize(["**/*.pyx"], compiler_directives={
+      'embedsignature': True,
+      'boundscheck' : False,
+      'wraparound' : False}),
     packages=setuptools.find_packages(),
     classifiers=[
         'Development Status :: 4 - Beta',

@@ -42,8 +42,8 @@ def test_short_range_with_data_show(test_out, capsys):
 
 def test_long_range_with_data_show(test_out, capsys):
     Ranges(start=range(13), width=1, data = {
-        'score' : np.array(range(0, 13), dtype="f4"),
-        'fscore' : np.array(range(0, 13), dtype="f4") /100,
+        'score': np.array(range(0, 13), dtype="f4"),
+        'fscore': np.array(range(0, 13), dtype="f4") /100,
     }).show()
     x = capsys.readouterr().out
     assert x == (
@@ -61,9 +61,9 @@ def test_long_range_with_data_show(test_out, capsys):
         11        11 |      11.0      0.11
         12        12 |      12.0      0.12
 ''')
-    Ranges(start=range(10), width=1, data = {
-        'score' : np.array(range(0, 10), dtype="f4"),
-        'fscore' : np.array(range(0, 10), dtype="f4") /100,
+    Ranges(start=range(10), width=1, data={
+        'score': np.array(range(0, 10), dtype="f4"),
+        'fscore': np.array(range(0, 10), dtype="f4") /100,
     }).show()
     x = capsys.readouterr().out
     assert x == (
@@ -85,18 +85,18 @@ def test_long_range_with_data_show(test_out, capsys):
 def test_delim(tmpdir):
     path = Path(tmpdir, "delim.tab")
     rg1 = Ranges(start=range(13), width=1, data = {
-        'score' : np.array(range(0, 13), dtype="f4"),
-        'fscore' : np.array(range(0, 13), dtype="f4") /100,
+        'score': np.array(range(0, 13), dtype="f4"),
+        'fscore': np.array(range(0, 13), dtype="f4") /100,
     })
     rg1.to_delim(path)
     rg2 = Ranges.read_delim(path)
     assert rg1.samerange(rg2)
     assert rg1.equals(rg2)
-    
+
 def test_samerange():
     rg1 = Ranges(start=range(13), width=1, data = {
-        'score' : np.array(range(0, 13), dtype="f4"),
-        'fscore' : np.array(range(0, 13), dtype="f4") /100,
+        'score': np.array(range(0, 13), dtype="f4"),
+        'fscore': np.array(range(0, 13), dtype="f4") /100,
     })
     rg2 = Ranges(start=range(13), width=1)
     rg3 = Ranges(start=range(13), width=2)
