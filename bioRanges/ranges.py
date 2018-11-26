@@ -43,7 +43,7 @@ from .exeptions import NotImplemented
 def log(*args):
     print(*args, file=sys.stderr)
 class Ranges():
-    PRI_TYPES = [('start', 'u4'), ('width', 'u4')]
+    PRI_TYPES = [('start', 'u4'), ('end', 'u4')]
     DATA_TYPES = []
     INDEX_COLS = ['names']
     @property
@@ -70,12 +70,7 @@ class Ranges():
             self.end = self.start + width - 1
         elif end is not None:
             self.end = np.zeros(len(start), dtype="u4") + end
-            print(">",end)
-            print(">",self.end)
-        print("!!!")
-        print(self.start)
-        print(self.end)
-        print("+++")
+
     @classmethod
     def from_raw(cls, start, end, data_frame):
         self = cls.__new__(cls)
@@ -185,19 +180,19 @@ class Ranges():
                 print(data_delim, end="")
                 for cell in data_row:
                     pr(cell)
-        for i, (start, width, *data) in enumerate(self.itertuples(), 1):
-            # log(start, "!!", width)
+        for i, (start, end, *data) in enumerate(self.itertuples(), 1):
+            # log(start, "!!", end)
             if i > self.MAX_ROW_SHOW // 2 and self.nrows() > self.MAX_ROW_SHOW:
                 print("...")
                 # print(self)
                 # print(self[- self.MAX_ROW_SHOW // 2:])
-                for start, width, *data_row in self[1 - self.MAX_ROW_SHOW // 2:].itertuples():
-                    pri_row_printer(start, width)
+                for start, end, *data_row in self[1 - self.MAX_ROW_SHOW // 2:].itertuples():
+                    pri_row_printer(start, end)
                     data_row_printer(data_row)
                     print()
                 break
             else:
-                pri_row_printer(start, width)
+                pri_row_printer(start, end)
                 data_row_printer(data)
                 print()
 
